@@ -5,7 +5,7 @@ import re
 import telebot 
 from telebot import types
 import redis
-
+admin = 51718050
 API_TOKEN = ''
 bot = telebot.TeleBot(API_TOKEN)
 r = redis.StrictRedis(host='127.0.0.1', port=6379, db=0)
@@ -21,61 +21,94 @@ def GetChat(chat):
        
 
 @bot.callback_query_handler(func=lambda call: call.data == 'unban')
-def uban(call):    
-    t = r.get('user').replace("'","").replace("u","").replace("[","").replace("]","")
-    bot.unban_chat_member(call.message.chat.id, t)
-    markup = types.InlineKeyboardMarkup()
-    item_text = types.InlineKeyboardButton('Ban user', callback_data="ban")
-    markup.row(item_text)
-    bot.edit_message_reply_markup(call.message.chat.id, message_id=call.message.message_id,reply_markup=markup)
+def uban(call):     
+    if not call.from_user.id == admin:
+        bot.answer_callback_query(call.id, text="You are not Admin.")
+    else:
+        t = r.get('foo').replace("'","").replace("u","").replace("[","").replace("]","")
+        bot.unban_chat_member(call.message.chat.id, t)
+        markup = types.InlineKeyboardMarkup()
+        item_text = types.InlineKeyboardButton('Ban user', callback_data="ban")
+        markup.row(item_text)
+        bot.edit_message_reply_markup(call.message.chat.id, message_id=call.message.message_id,reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: call.data == 'ban')
 def ban(call):    
-    t = r.get('user').replace("'","").replace("u","").replace("[","").replace("]","")
-    bot.kick_chat_member(call.message.chat.id, t)
-    markup = types.InlineKeyboardMarkup()
-    item_text = types.InlineKeyboardButton('Unban user', callback_data="unban")
-    markup.row(item_text)
-    bot.edit_message_reply_markup(call.message.chat.id, message_id=call.message.message_id,reply_markup=markup)
+    if not call.from_user.id == admin:
+        bot.answer_callback_query(call.id, text="You are not Admin.") 
+    else:  
+        t = r.get('foo').replace("'","").replace("u","").replace("[","").replace("]","")
+        bot.kick_chat_member(call.message.chat.id, t)
+        markup = types.InlineKeyboardMarkup()
+        item_text = types.InlineKeyboardButton('Unban user', callback_data="unban")
+        markup.row(item_text)
+        bot.edit_message_reply_markup(call.message.chat.id, message_id=call.message.message_id,reply_markup=markup)
 
 @bot.message_handler(commands=['ban'])
-def ban(message):
-  
-     if not message.reply_to_message:
+def ban(message):     
+    if not message.from_user.id == admin:
+        bot.send_message(message.chat.id,"_You are not Admin._",parse_mode="Markdown")   
+    else:
+      if not message.reply_to_message:
         text = message.text.split(' ')[1:]
         bot.kick_chat_member(message.chat.id,text)
-        r.set('user', text)
+        r.set('foo', text)
         markup = types.InlineKeyboardMarkup()
         item_text = types.InlineKeyboardButton('Unban user', callback_data="unban")
         markup.row(item_text)
         bot.send_message(message.chat.id,'User was kicked',reply_markup=markup)
      
-     if message.reply_to_message:
+      if message.reply_to_message:
         text = message.reply_to_message.from_user.id
-        r.set('user', text)
+        r.set('foo', text)
         markup = types.InlineKeyboardMarkup()
         item_text = types.InlineKeyboardButton('Unban user', callback_data="unban")
         markup.row(item_text)
         bot.kick_chat_member(message.chat.id,text)
         bot.send_message(message.chat.id,'User was kicked',reply_markup=markup)
 
-@bot.message_handler(commands=['info'])
-def send_info(message):
 
+        
+@bot.message_handler(commands=['unban'])
+def ban(message):     
+    if not message.from_user.id == admin:
+        bot.send_message(message.chat.id,"_You are not Admin._",parse_mode="Markdown")   
+    else:
+      if not message.reply_to_message:
+        text = message.text.split(' ')[1:]
+        bot.unban_chat_member(message.chat.id,text)
+        r.set('foo', text)
+        markup = types.InlineKeyboardMarkup()
+        item_text = types.InlineKeyboardButton('Ban user', callback_data="ban")
+        markup.row(item_text)
+        bot.send_message(message.chat.id,'User was unbaned',reply_markup=markup)
      
-     if message.reply_to_message:
-        t = str(message.reply_to_message.from_user.id) + '\n' + message.reply_to_message.from_user.first_name
-        if message.reply_to_message.from_user.username:
-           username = '@' + message.reply_to_message.from_user.username
-        else:
-           username = ''
-        t += '\n' + username 
-        bot.send_message(message.chat.id,t)   
-      
-     if not message.reply_to_message: 
-        t = GetChat(message.chat.id)
-        bot.send_message(message.chat.id,t,parse_mode="Markdown") 
-         
+      if message.reply_to_message:
+        text = message.reply_to_message.from_user.id
+        r.set('foo', text)
+        markup = types.InlineKeyboardMarkup()
+        item_text = types.InlineKeyboardButton('Ban user', callback_data="ban")
+        markup.row(item_text)
+        bot.unban_chat_member(message.chat.id,text)
+        bot.send_message(message.chat.id,'User was unbaned',reply_markup=markup)      
+        
+@bot.message_handler(commands=['info'])
+def send_info(message):   
+     if not message.from_user.id == admin:
+        bot.send_message(message.chat.id,"_You are not Admin._",parse_mode="Markdown") 
+    
+     else:
+        if message.reply_to_message:
+           t = str(message.reply_to_message.from_user.id) + '\n' + message.reply_to_message.from_user.first_name
+           if message.reply_to_message.from_user.username:
+              username = '@' + message.reply_to_message.from_user.username
+           else:
+              username = ''
+           t += '\n' + username 
+           bot.send_message(message.chat.id,t)   
+        if not message.reply_to_message: 
+           t = GetChat(message.chat.id)
+           bot.send_message(message.chat.id,t,parse_mode="Markdown") 
              
 bot.polling(none_stop=True, interval=0)
 
